@@ -1,0 +1,9 @@
+pyaudiowpatch
+comtypes
+psutil
+sounddevice
+numpy
+soundfile
+customtkinter
+pillow
+pycaw
