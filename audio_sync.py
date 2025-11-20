@@ -8,20 +8,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 class OutputChannel:
-    def __init__(self, device_index, delay_ms=0):
+    def __init__(self, device_index, delay_ms=0, volume=1.0):
         self.device_index = device_index
         self.delay_ms = delay_ms
+        self.volume = volume  # 0.0 to 1.0
         self.stream = None
         self.buffer = [] # Simple list buffer for now, or numpy ring buffer
         self.active = False
 
 class SyncEngine:
-    def __init__(self):
+    def __init__(self, network_server=None):
         self.p = pyaudio.PyAudio()
         self.input_device_index = None
         self.outputs = [] # List of OutputChannel
         self.is_running = False
         self.thread = None
+        self.network_server = network_server  # Optional network server for broadcasting
 
     def get_devices(self):
         """Returns list of devices (both input and output)."""
@@ -55,11 +57,24 @@ class SyncEngine:
     def add_output(self, device_index):
         self.outputs.append(OutputChannel(device_index))
 
-    def start(self, input_index, output_indices, use_loopback=False):
-        """Start syncing from input to multiple outputs"""
+    def start(self, input_index, output_indices, use_loopback=False, volumes=None, delays=None):
+        """Start syncing from input to multiple outputs
+        
+        Args:
+            input_index: Input device index
+            output_indices: List of output device indices
+            use_loopback: Use WASAPI loopback
+            volumes: List of volume levels (0-100) for each output, or None for 100%
+            delays: List of delay values (ms) for each output, or None for 0ms
+        """
         self.input_device_index = input_index
         self.output_indices = output_indices
         self.use_loopback = use_loopback
+        
+        # Store volumes and delays
+        self.volumes = volumes if volumes else [100] * len(output_indices)
+        self.delays = delays if delays else [0] * len(output_indices)
+        
         self.is_running = True
         self.thread = threading.Thread(target=self._loop)
         self.thread.start()
@@ -173,12 +188,28 @@ class SyncEngine:
                 # Read from input (use same buffer size)
                 data = in_stream.read(BUFFER_SIZE, exception_on_overflow=False)
                 
-                # Broadcast to ALL outputs
-                for stream in out_streams:
+                # Convert to numpy array for volume processing
+                audio_array = np.frombuffer(data, dtype=np.int16)
+                
+                # Broadcast to ALL outputs with individual volume control
+                for i, stream in enumerate(out_streams):
                     try:
-                        stream.write(data)
+                        # Apply volume (convert 0-100 to 0-1.0)
+                        volume_factor = self.volumes[i] / 100.0
+                        
+                        if volume_factor != 1.0:
+                            # Apply volume
+                            adjusted_audio = (audio_array * volume_factor).astype(np.int16)
+                            stream.write(adjusted_audio.tobytes())
+                        else:
+                            # No volume adjustment needed
+                            stream.write(data)
                     except Exception as e:
                         logger.error(f"Error writing to output: {e}")
+                
+                # Broadcast to network clients if server is active
+                if self.network_server and self.network_server.is_running:
+                    self.network_server.broadcast_audio(audio_array)
                     
         except Exception as e:
             logger.error(f"Sync Engine Error: {e}")
