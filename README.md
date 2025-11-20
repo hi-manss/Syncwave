@@ -73,13 +73,14 @@ MIT License - see LICENSE file for details
 ## 👤 Author
 
 **Abhishek Chauhan**  
-GitHub: [@hi-manss](https://github.com/hi-manss/)
+GitHub:
+ [@AbhishekChauhan1112](https://github.com/AbhishekChauhan1112)
 
 ## 🤝 Contributer
 
 **Himanshh Chauhan**
-GitHub: [@AbhishekChauhan1112](https://github.com/AbhishekChauhan1112)
-
+GitHub:
+[@hi-manss](https://github.com/hi-manss/)
 
 
 ---
