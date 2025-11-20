@@ -7,3 +7,5 @@ soundfile
 customtkinter
 pillow
 pycaw
+scipy
+zeroconf

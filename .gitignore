@@ -13,3 +13,12 @@ build/
 .vscode/
 .idea/
 *.log
+
+# Personal documentation (not needed in repo)
+ROADMAP.md
+PROJECT_STRUCTURE.md
+CONTRIBUTING.md
+FEATURES.md
+IMPLEMENTATION_SUMMARY.md
+QUICKSTART.md
+CHANGELOG.md
